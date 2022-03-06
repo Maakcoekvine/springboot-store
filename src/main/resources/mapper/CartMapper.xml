@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coek.mapper.CartMapper">
+
+    <resultMap id="cartMap" type="com.coek.domain.Cart">
+        <id column="cid" property="cid"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="created_user" property="createdUser"/>
+        <result column="modified_time" property="modifiedTime"/>
+        <result column="modified_user" property="modifiedUser"/>
+    </resultMap>
+
+    <!--查询当前购物车中是否存在该商品-->
+    <select id="findByPidAndUid" resultMap="cartMap">
+        SELECT * FROM t_cart
+        WHERE pid=#{pid} and uid=#{uid}
+    </select>
+
+    <!--添加购物车商品数量-->
+    <update id="updateNum">
+        UPDATE t_cart SET num=num+#{num},modified_time=#{modifiedTime}
+        WHERE pid=#{pid} and uid=#{uid}
+    </update>
+
+    <!--增加购物车商品-->
+    <insert id="addToCart">
+        INSERT INTO t_cart(
+            uid,
+            pid,
+            price,
+            num,
+            created_user,
+            created_time,
+            modified_user,
+            modified_time
+        )VALUES(
+            #{uid},
+            #{pid},
+            #{price},
+            #{num},
+            #{createdUser},
+            #{createdTime},
+            #{modifiedUser},
+            #{modifiedTime}
+                       )
+    </insert>
+
+    <!--查找用户购物车信息-->
+    <!--
+        购物车需要展示数据有：t_product中title、image字段
+			* 					  t_cart中price、num
+			* 					还需要pid、cid、uid
+
+    -->
+    <select id="showCartList" resultType="com.coek.vo.CartVO">
+        SELECT
+
+        p.title,
+        p.image,
+        c.price,
+        c.num,
+        c.pid,
+        c.cid,
+        c.uid
+        FROM t_product p
+        RIGHT JOIN t_cart c
+        ON   p.id=c.pid
+        WHERE uid=#{uid}
+        ORDER BY c.created_time DESC
+    </select>
+
+
+    <!--增加商品数量-->
+    <update id="addNum">
+        UPDATE t_cart SET num=num+1,modified_time=#{modifiedTime}
+        WHERE  cid=#{cid}
+    </update>
+
+    <!--减少商品数量-->
+    <update id="reduceNum">
+        UPDATE t_cart SET num=num-1,modified_time=#{modifiedTime}
+        WHERE cid=#{cid}
+    </update>
+
+    <!--根据cid查找-->
+    <select id="findByCid" resultMap="cartMap">
+        SELECT * FROM t_cart
+        WHERE cid=#{cid}
+    </select>
+
+    <!--查询需要结算的商品-->
+    <!--
+            t_product:image、title
+            t_cart:cid、pid、uid、price、num
+    -->
+    <select id="showSelectedList" resultType="com.coek.vo.CartVO">
+        SELECT
+        p.title,
+        p.image,
+        t_cart.price,
+        t_cart.num,
+        t_cart.pid,
+        t_cart.cid,
+        t_cart.uid
+        FROM t_product p
+        RIGHT JOIN  t_cart
+        ON t_cart.pid=p.id
+        WHERE uid=#{uid}
+        AND t_cart.cid in (<foreach collection="array" item="c" separator=",">
+            #{c}
+    </foreach> )
+    </select>
+
+    <!--删除购物车中的商品-->
+    <delete id="deleteCart">
+        DELETE FROM t_cart WHERE cid=#{cid}
+    </delete>
+</mapper>
